@@ -1,13 +1,13 @@
 package de.marvin2k0.monopoly;
 
 import de.marvin2k0.monopoly.commands.FeldCommand;
+import de.marvin2k0.monopoly.heads.Main;
 import de.marvin2k0.monopoly.listener.GameListener;
 import de.marvin2k0.monopoly.listener.SignListener;
 import de.marvin2k0.monopoly.utils.Locations;
 import de.marvin2k0.monopoly.utils.Text;
 import de.marvinleiers.minigameapi.MinigameAPI;
 import de.marvinleiers.minigameapi.MinigameMain;
-import de.marvinleiers.minigameapi.game.Game;
 import de.marvinleiers.minigameapi.utils.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -15,9 +15,9 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
-
-//TODO: Liste von Spawns und Startteleportation
 
 public class Monopoly extends JavaPlugin
 {
@@ -35,6 +35,14 @@ public class Monopoly extends JavaPlugin
         Inventory lobbyItems = Bukkit.createInventory(null, 27, "");
         lobbyItems.setItem(4, ItemUtils.create(Material.NETHER_STAR, "§9Team wählen"));
         api.setLobbyItems(lobbyItems);
+
+        Inventory gameItems = Bukkit.createInventory(null, 27, "");
+        ItemStack dice = Main.getHead("dice");
+        ItemMeta meta = dice.getItemMeta();
+        meta.setDisplayName("§f§lWürfel");
+        dice.setItemMeta(meta);
+        gameItems.setItem(4, dice);
+        api.setGameItems(gameItems);
 
         getCommand("setspawn").setExecutor(this);
         getCommand("setlobby").setExecutor(this);
