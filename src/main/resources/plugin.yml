@@ -1,0 +1,11 @@
+name: Monopoly
+author: Marvin2k0
+version: 1.0
+main: de.marvin2k0.monopoly.Monopoly
+commands:
+  setspawn:
+    permission: monopoly.setspawn
+  setlobby:
+    permission: monopoly.setlobby
+  setfeld:
+    permission: monopoly.setfeld
