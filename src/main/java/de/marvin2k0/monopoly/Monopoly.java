@@ -8,6 +8,7 @@ import de.marvin2k0.monopoly.utils.Locations;
 import de.marvin2k0.monopoly.utils.Text;
 import de.marvinleiers.minigameapi.MinigameAPI;
 import de.marvinleiers.minigameapi.MinigameMain;
+import de.marvinleiers.minigameapi.game.GamePlayer;
 import de.marvinleiers.minigameapi.utils.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -19,8 +20,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.HashMap;
+
 public class Monopoly extends JavaPlugin
 {
+    public static HashMap<GamePlayer, Integer> nums = new HashMap<>();
     private static MinigameAPI api;
     public static Monopoly plugin;
 

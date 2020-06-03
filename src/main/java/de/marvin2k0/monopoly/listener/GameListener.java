@@ -10,18 +10,23 @@ import de.marvinleiers.minigameapi.utils.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class GameListener implements Listener
 {
     private static Inventory inv = Bukkit.createInventory(null, 9, "§9Team wählen");
+    private static ArrayList<Player> diceAction = new ArrayList<>();
+    private static Random random = new Random();
     private boolean init = false;
 
     @EventHandler
@@ -78,7 +83,7 @@ public class GameListener implements Listener
     }
 
     @EventHandler
-    public void onItemUse(PlayerInLobbyItemInteractEvent event)
+    public void onItemInLobby(PlayerInLobbyItemInteractEvent event)
     {
         ItemStack item = event.getItem();
         Player player = event.getPlayer();
@@ -89,6 +94,59 @@ public class GameListener implements Listener
         if (item.getType() == Material.NETHER_STAR && item.getItemMeta().getDisplayName().equalsIgnoreCase("§9Team wählen"))
         {
             player.openInventory(getTeamInventory());
+        }
+    }
+
+
+    @EventHandler
+    public void onItemInGame(PlayerInGameItemInteractEvent event)
+    {
+        ItemStack item = event.getItem();
+        Player player = event.getPlayer();
+        GamePlayer gp = event.getGamePlayer();
+
+        if (!item.hasItemMeta())
+            return;
+
+        if (item.getType() == Material.SKULL_ITEM && item.getItemMeta().getDisplayName().equals("§f§lWürfel"))
+        {
+            if (diceAction.contains(player))
+                return;
+
+            diceAction.add(player);
+            int[] numbers = {1, 2, 3, 4, 5, 6};
+            final int[] i = {0};
+
+            long[] delay = {random.nextInt(6) + 3};
+
+            new BukkitRunnable()
+            {
+                @Override
+                public void run()
+                {
+                    int num = numbers[random.nextInt(numbers.length)];
+
+                    player.sendTitle( "§6" + num, "");
+                    player.playSound(player.getLocation(), Sound.NOTE_BASS, 1, 1);
+
+                    if (i[0] >= 20)
+                    {
+                        diceAction.remove(player);
+
+                        if (Monopoly.nums.containsKey(gp))
+                            Monopoly.nums.remove(gp);
+
+                        Monopoly.nums.put(gp, num);
+
+                        System.out.println(Monopoly.nums.get(gp));
+
+                        this.cancel();
+                        return;
+                    }
+
+                    i[0]++;
+                }
+            }.runTaskTimer(Monopoly.plugin, 0, delay[0]);
         }
     }
 
