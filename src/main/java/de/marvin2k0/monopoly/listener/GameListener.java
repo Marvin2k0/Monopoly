@@ -7,10 +7,11 @@ import de.marvinleiers.minigameapi.events.*;
 import de.marvinleiers.minigameapi.game.Game;
 import de.marvinleiers.minigameapi.game.GamePlayer;
 import de.marvinleiers.minigameapi.utils.ItemUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
+import net.minecraft.server.v1_8_R1.ChatSerializer;
+import net.minecraft.server.v1_8_R1.EnumTitleAction;
+import net.minecraft.server.v1_8_R1.PacketPlayOutTitle;
+import org.bukkit.*;
+import org.bukkit.craftbukkit.v1_8_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,6 +21,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class GameListener implements Listener
@@ -41,6 +44,7 @@ public class GameListener implements Listener
             return;
         }
 
+        Monopoly.field.put(event.getGamePlayer(), 0);
         event.getPlayer().teleport(Locations.get("games." + game.getName() + ".lobby"));
         game.sendMessage(Text.get("join").replace("%player%", event.getPlayer().getName()));
     }
@@ -60,13 +64,16 @@ public class GameListener implements Listener
     }
 
     @EventHandler
+    public void onReset(GameResetEvent event)
+    {
+        for (GamePlayer gp : event.getGame().getGamePlayers())
+            Monopoly.field.remove(gp);
+    }
+
+    @EventHandler
     public void onLeave(PlayerGameLeaveEvent event)
     {
-        if (event.getGamePlayer() == null)
-            System.out.println("ist null");
-        else
-            System.out.println("ist nicht null");
-
+        Monopoly.field.remove(event.getGamePlayer());
 
         if (event.getGamePlayer().getTeam() != null)
         {
@@ -124,21 +131,33 @@ public class GameListener implements Listener
                 @Override
                 public void run()
                 {
+                    if (Monopoly.nums.containsKey(gp))
+                    {
+                        this.cancel();
+                        return;
+                    }
+
                     int num = numbers[random.nextInt(numbers.length)];
 
-                    player.sendTitle( "§6" + num, "");
+                    sendTitle(player, "§6" + num, 0, 5, 0);
                     player.playSound(player.getLocation(), Sound.NOTE_BASS, 1, 1);
 
                     if (i[0] >= 20)
                     {
                         diceAction.remove(player);
 
-                        if (Monopoly.nums.containsKey(gp))
-                            Monopoly.nums.remove(gp);
-
+                        Monopoly.nums.remove(gp);
                         Monopoly.nums.put(gp, num);
 
-                        System.out.println(Monopoly.nums.get(gp));
+                        if (check(event.getGame()))
+                        {
+                            for (GamePlayer gp : event.getGame().getGamePlayers())
+                            {
+                                tpToField(gp);
+                            }
+
+                            Monopoly.nums.clear();
+                        }
 
                         this.cancel();
                         return;
@@ -148,6 +167,47 @@ public class GameListener implements Listener
                 }
             }.runTaskTimer(Monopoly.plugin, 0, delay[0]);
         }
+    }
+
+    private void tpToField(GamePlayer gp)
+    {
+        int current = Monopoly.field.get(gp);
+        int rolled = Monopoly.nums.get(gp);
+
+        int highestField = 0;
+
+        for (Map.Entry<String, Object> entry : Monopoly.plugin.getConfig().getConfigurationSection("games." + gp.getGame().getName() + ".felder").getValues(false).entrySet())
+        {
+            if (Integer.parseInt(entry.getKey()) > highestField)
+                highestField = Integer.parseInt(entry.getKey());
+        }
+
+        int feld = current + rolled;
+
+        if (feld > highestField)
+            feld -= (highestField + 1);
+
+        Monopoly.field.remove(gp);
+        Monopoly.field.put(gp, feld);
+
+        Location loc = null;
+
+        for (Map.Entry<String, Object> entry : Monopoly.plugin.getConfig().getConfigurationSection("games." + gp.getGame().getName() + ".felder." + feld).getValues(false).entrySet())
+            loc = Locations.get("games." + gp.getGame().getName() + ".felder." + feld + "." + entry.getKey());
+
+        gp.getPlayer().teleport(loc);
+    }
+
+    private boolean check(Game game)
+    {
+        HashMap<GamePlayer, Integer> clone = (HashMap<GamePlayer, Integer>) Monopoly.nums.clone();
+        for (GamePlayer gp : game.getGamePlayers())
+        {
+            if (clone.remove(gp) == null)
+                return false;
+        }
+
+        return true;
     }
 
     @EventHandler
@@ -205,6 +265,14 @@ public class GameListener implements Listener
                 event.getGamePlayer().setTeam(team);
             }
         }
+    }
+
+    public void sendTitle(Player p, String msg, int fadeIn, int stayTime, int fadeOut) {
+
+        PacketPlayOutTitle title = new PacketPlayOutTitle(EnumTitleAction.TITLE, ChatSerializer.a(ChatColor.translateAlternateColorCodes('&', "{\"text\": \"" + msg + "\"}")), fadeIn, stayTime, fadeOut);
+
+        ((CraftPlayer) p).getHandle().playerConnection.sendPacket(title);
+
     }
 
     private ItemStack getTeam(String name)

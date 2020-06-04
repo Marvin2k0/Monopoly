@@ -25,6 +25,7 @@ import java.util.HashMap;
 public class Monopoly extends JavaPlugin
 {
     public static HashMap<GamePlayer, Integer> nums = new HashMap<>();
+    public static HashMap<GamePlayer,Integer> field = new HashMap<>();
     private static MinigameAPI api;
     public static Monopoly plugin;
 
